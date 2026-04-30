@@ -3,9 +3,493 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Racha CG</title>
+  <title>Racha de Sábado</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    nav {
+      background: #1a1a1a;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 0 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #fff;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 4px;
+    }
+    .nav-links a {
+      color: #888;
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-links a:hover { color: #fff; background: #2a2a2a; }
+    .nav-links a.active { color: #fff; }
+
+    /* LAYOUT */
+    main {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 4rem;
+    }
+
+    /* HEADER DA TEMPORADA */
+    .temporada-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: #555;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .serie-titulo {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 1.5rem;
+    }
+
+    /* PRÓXIMO JOGO */
+    .proximo-jogo {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .proximo-jogo-icon {
+      width: 38px;
+      height: 38px;
+      background: #222;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .proximo-jogo-info {}
+    .proximo-jogo-label {
+      font-size: 11px;
+      color: #555;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .proximo-jogo-data {
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .proximo-jogo-local {
+      font-size: 13px;
+      color: #666;
+      margin-top: 1px;
+    }
+
+    /* PLACAR DA SÉRIE */
+    .placar-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .placar-label {
+      font-size: 11px;
+      color: #555;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .placar-times {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .time-block {
+      flex: 1;
+      text-align: center;
+    }
+    .time-nome {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .time-cap {
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .time-nome.vermelho { color: #ef4444; }
+    .time-nome.azul { color: #3b82f6; }
+    .time-cap { color: #666; }
+    .placar-numero {
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .placar-numero.vermelho { color: #ef4444; }
+    .placar-numero.azul { color: #3b82f6; }
+    .placar-sep {
+      font-size: 28px;
+      font-weight: 300;
+      color: #333;
+    }
+    .jogos-lista {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #222;
+    }
+    .jogo-pill {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid #2a2a2a;
+      color: #555;
+    }
+    .jogo-pill.verm { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+    .jogo-pill.azul { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.3); color: #3b82f6; }
+    .jogo-pill.pen { font-size: 10px; }
+
+    /* ESCALAÇÕES */
+    .escalacoes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 1.25rem;
+    }
+    .time-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .time-card-header {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .time-card-header.vermelho {
+      background: rgba(239,68,68,0.12);
+      border-bottom: 1px solid rgba(239,68,68,0.2);
+      color: #ef4444;
+    }
+    .time-card-header.azul {
+      background: rgba(59,130,246,0.12);
+      border-bottom: 1px solid rgba(59,130,246,0.2);
+      color: #3b82f6;
+    }
+    .jogador-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-bottom: 1px solid #1f1f1f;
+    }
+    .jogador-row:last-child { border-bottom: none; }
+    .jogador-num {
+      font-size: 13px;
+      font-weight: 700;
+      width: 28px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .jogador-num.vermelho { color: #ef4444; }
+    .jogador-num.azul { color: #3b82f6; }
+    .jogador-nome {
+      font-size: 13px;
+      color: #ccc;
+      flex: 1;
+    }
+    .cap-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.05em;
+    }
+    .cap-badge.vermelho { background: rgba(239,68,68,0.2); color: #ef4444; }
+    .cap-badge.azul { background: rgba(59,130,246,0.2); color: #3b82f6; }
+
+    /* LOADING / VAZIO */
+    .loading {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #444;
+      font-size: 14px;
+    }
+    .sem-serie {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      color: #555;
+      font-size: 14px;
+    }
+
+    /* FOOTER NAV MOBILE */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #1a1a1a;
+      border-top: 1px solid #2a2a2a;
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    }
+    .bottom-nav a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      text-decoration: none;
+      color: #555;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 8px;
+      transition: color 0.15s;
+    }
+    .bottom-nav a.active { color: #fff; }
+    .bottom-nav a span.icon { font-size: 18px; }
+  </style>
 </head>
 <body>
-  <h1>Racha CG — em construção</h1>
+
+<nav>
+  <a class="nav-logo" href="index.html">RACHA DE SÁBADO</a>
+  <div class="nav-links">
+    <a href="artilharia.html">Artilharia</a>
+    <a href="selecao.html">Seleção</a>
+    <a href="historico.html">Histórico</a>
+  </div>
+</nav>
+
+<main id="app">
+  <div class="loading">Carregando...</div>
+</main>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="active">
+    <span class="icon">⚽</span>
+    <span>Início</span>
+  </a>
+  <a href="artilharia.html">
+    <span class="icon">🥇</span>
+    <span>Artilharia</span>
+  </a>
+  <a href="selecao.html">
+    <span class="icon">⭐</span>
+    <span>Seleção</span>
+  </a>
+  <a href="historico.html">
+    <span class="icon">📋</span>
+    <span>Histórico</span>
+  </a>
+  <a href="jogadores.html">
+    <span class="icon">👕</span>
+    <span>Jogadores</span>
+  </a>
+</nav>
+
+<script>
+  // =============================================
+  // CONFIGURAÇÃO — substitua pelos seus valores
+  // =============================================
+  const SUPABASE_URL = 'https://eudmuboergcgqbvchafb.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1ZG11Ym9lcmdjZ3FidmNoYWZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjI4NTMsImV4cCI6MjA5MzEzODg1M30.KcJSQngYhqXsrH8J5Pj2Up2f2LXeFndwHI0hPm5CDIE';
+  // =============================================
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const LOCAL_CAMPO = 'Campo da Associação';
+
+  function formatarData(dataStr) {
+    if (!dataStr) return null;
+    const [ano, mes, dia] = dataStr.split('-');
+    const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const d = new Date(ano, mes - 1, dia);
+    return `${dias[d.getDay()]}, ${dia}/${mes}/${ano}`;
+  }
+
+  function formatarHorario(horStr) {
+    if (!horStr) return null;
+    const [h, m] = horStr.split(':');
+    return `${h}h${m !== '00' ? m : ''}`;
+  }
+
+  async function carregar() {
+    const app = document.getElementById('app');
+
+    // 1. Temporada ativa
+    const { data: temporadas } = await db
+      .from('temporadas')
+      .select('*')
+      .eq('status', 'ativa')
+      .limit(1);
+
+    if (!temporadas || temporadas.length === 0) {
+      app.innerHTML = '<div class="sem-serie">Nenhuma temporada ativa no momento.</div>';
+      return;
+    }
+    const temporada = temporadas[0];
+
+    // 2. Série em andamento
+    const { data: series } = await db
+      .from('series')
+      .select('*, cap_vermelho:jogadores!cap_vermelho_id(id,numero,nome,apelido), cap_azul:jogadores!cap_azul_id(id,numero,nome,apelido)')
+      .eq('temporada_id', temporada.id)
+      .eq('status', 'em_andamento')
+      .order('numero', { ascending: false })
+      .limit(1);
+
+    const temporadaLabel = `<p class="temporada-label">Temporada ${temporada.ano}</p>`;
+
+    if (!series || series.length === 0) {
+      app.innerHTML = temporadaLabel + '<div class="sem-serie">Nenhuma série em andamento no momento.</div>';
+      return;
+    }
+    const serie = series[0];
+
+    // 3. Jogos da série
+    const { data: jogos } = await db
+      .from('jogos')
+      .select('*')
+      .eq('serie_id', serie.id)
+      .order('numero_jogo', { ascending: true });
+
+    // 4. Escalações
+    const { data: escalacoes } = await db
+      .from('escalacoes')
+      .select('*, jogador:jogadores(id,numero,nome,apelido)')
+      .eq('serie_id', serie.id)
+      .order('e_capitao', { ascending: false });
+
+    // --- MONTA A TELA ---
+
+    // Placar da série
+    const vitV = (jogos || []).filter(j => j.vencedor === 'vermelho').length;
+    const vitA = (jogos || []).filter(j => j.vencedor === 'azul').length;
+
+    // Próximo jogo
+    const proximoJogo = (jogos || []).find(j => !j.vencedor);
+    let proximoJogoHTML = '';
+    if (proximoJogo && proximoJogo.data) {
+      const dataFmt = formatarData(proximoJogo.data);
+      const horFmt = proximoJogo.horario ? ` · ${formatarHorario(proximoJogo.horario)}` : '';
+      proximoJogoHTML = `
+        <div class="proximo-jogo">
+          <div class="proximo-jogo-icon">📅</div>
+          <div class="proximo-jogo-info">
+            <div class="proximo-jogo-label">Jogo ${proximoJogo.numero_jogo} · Próxima partida</div>
+            <div class="proximo-jogo-data">${dataFmt}${horFmt}</div>
+            <div class="proximo-jogo-local">${LOCAL_CAMPO}</div>
+          </div>
+        </div>`;
+    }
+
+    // Pills dos jogos
+    const pillsHTML = (jogos || []).map(j => {
+      if (!j.vencedor) return `<span class="jogo-pill">Jogo ${j.numero_jogo}</span>`;
+      const cls = j.vencedor === 'vermelho' ? 'verm' : 'azul';
+      const pen = j.foi_penalti ? ' <span class="jogo-pill pen">PEN</span>' : '';
+      return `<span class="jogo-pill ${cls}">${j.gols_vermelho}×${j.gols_azul}</span>${pen}`;
+    }).join('');
+
+    // Nome do capitão
+    const nomeJogador = (j) => j ? (j.apelido || j.nome.split(' ')[0]) : '—';
+
+    // Escalações por time
+    const timeV = (escalacoes || []).filter(e => e.time === 'vermelho').sort((a,b) => a.jogador.numero - b.jogador.numero);
+    const timeA = (escalacoes || []).filter(e => e.time === 'azul').sort((a,b) => a.jogador.numero - b.jogador.numero);
+
+    const renderTime = (jogadores, cor) => jogadores.map(e => `
+      <div class="jogador-row">
+        <span class="jogador-num ${cor}">#${e.jogador.numero}</span>
+        <span class="jogador-nome">${e.jogador.apelido || e.jogador.nome.split(' ')[0]}</span>
+        ${e.e_capitao ? `<span class="cap-badge ${cor}">CAP</span>` : ''}
+      </div>`).join('');
+
+    app.innerHTML = `
+      ${temporadaLabel}
+      <h1 class="serie-titulo">Série ${serie.numero} · ${temporada.ano}</h1>
+
+      ${proximoJogoHTML}
+
+      <div class="placar-card">
+        <div class="placar-label">Placar da série</div>
+        <div class="placar-times">
+          <div class="time-block">
+            <div class="time-nome vermelho">Vermelho</div>
+            <div class="time-cap">Cap. #${serie.cap_vermelho?.numero} ${nomeJogador(serie.cap_vermelho)}</div>
+            <div class="placar-numero vermelho">${vitV}</div>
+          </div>
+          <div class="placar-sep">×</div>
+          <div class="time-block">
+            <div class="time-nome azul">Azul</div>
+            <div class="time-cap">Cap. #${serie.cap_azul?.numero} ${nomeJogador(serie.cap_azul)}</div>
+            <div class="placar-numero azul">${vitA}</div>
+          </div>
+        </div>
+        ${pillsHTML ? `<div class="jogos-lista">${pillsHTML}</div>` : ''}
+      </div>
+
+      ${escalacoes && escalacoes.length > 0 ? `
+        <div class="escalacoes-grid">
+          <div class="time-card">
+            <div class="time-card-header vermelho">Time Vermelho</div>
+            ${renderTime(timeV, 'vermelho')}
+          </div>
+          <div class="time-card">
+            <div class="time-card-header azul">Time Azul</div>
+            ${renderTime(timeA, 'azul')}
+          </div>
+        </div>` : ''}
+    `;
+  }
+
+  carregar();
+</script>
+
 </body>
 </html>
