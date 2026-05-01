@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin · Racha de Sábado</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #f0f0f0; min-height: 100vh; }
+
+    /* LOGIN */
+    #login-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 1rem;
+    }
+    .login-card {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px;
+      padding: 2rem; width: 100%; max-width: 360px; text-align: center;
+    }
+    .login-card h1 { font-size: 18px; margin-bottom: 6px; }
+    .login-card p { font-size: 13px; color: #555; margin-bottom: 1.5rem; }
+    .login-card input {
+      width: 100%; padding: 10px 14px; background: #111; border: 1px solid #2a2a2a;
+      border-radius: 8px; color: #fff; font-size: 15px; margin-bottom: 12px; outline: none;
+    }
+    .login-card input:focus { border-color: #444; }
+    .login-erro { font-size: 12px; color: #ef4444; margin-top: -6px; margin-bottom: 10px; }
+
+    /* LAYOUT ADMIN */
+    #admin-screen { display: none; }
+    nav {
+      background: #1a1a1a; border-bottom: 1px solid #2a2a2a;
+      padding: 0 1rem; display: flex; align-items: center;
+      justify-content: space-between; height: 52px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo { font-size: 15px; font-weight: 700; color: #fff; }
+    .nav-logo span { color: #f59e0b; }
+    .sair-btn {
+      font-size: 12px; color: #555; background: none; border: 1px solid #2a2a2a;
+      border-radius: 6px; padding: 4px 10px; cursor: pointer; color: #888;
+    }
+    .sair-btn:hover { color: #fff; border-color: #444; }
+
+    main { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 4px; }
+    .tab {
+      flex: 1; padding: 8px; border-radius: 7px; background: none; border: none;
+      color: #555; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+    }
+    .tab:hover { color: #aaa; }
+    .tab.active { background: #2a2a2a; color: #fff; }
+
+    /* SEÇÕES */
+    .secao { display: none; }
+    .secao.ativa { display: block; }
+
+    /* CARDS */
+    .card {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
+      padding: 1.25rem; margin-bottom: 1rem;
+    }
+    .card-titulo { font-size: 14px; font-weight: 600; margin-bottom: 1rem; color: #aaa; }
+
+    /* FORM */
+    .form-row { margin-bottom: 12px; }
+    .form-row label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+    .form-row input, .form-row select {
+      width: 100%; padding: 9px 12px; background: #111; border: 1px solid #2a2a2a;
+      border-radius: 8px; color: #fff; font-size: 14px; outline: none;
+    }
+    .form-row input:focus, .form-row select:focus { border-color: #444; }
+    .form-row select option { background: #1a1a1a; }
+    .form-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* BOTÕES */
+    .btn {
+      padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500;
+      cursor: pointer; border: none; transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: #f59e0b; color: #000; }
+    .btn-verm { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .btn-azul { background: rgba(59,130,246,0.2); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+    .btn-danger { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+
+    /* FEEDBACK */
+    .feedback { font-size: 13px; margin-top: 10px; padding: 8px 12px; border-radius: 8px; }
+    .feedback.ok { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
+    .feedback.erro { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+
+    /* LISTA JOGADORES */
+    .jogador-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 0; border-bottom: 1px solid #1f1f1f;
+    }
+    .jogador-item:last-child { border-bottom: none; }
+    .num-badge {
+      width: 32px; height: 32px; border-radius: 8px; background: #222;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #f59e0b; flex-shrink: 0;
+    }
+    .jogador-info { flex: 1; }
+    .jogador-info .nome { font-size: 14px; color: #ddd; }
+    .jogador-info .apelido { font-size: 12px; color: #555; }
+
+    /* ESCALAÇÃO */
+    .times-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
+    .time-col { background: #111; border-radius: 10px; padding: 10px; min-height: 120px; }
+    .time-col-header { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+    .time-col-header.v { color: #ef4444; }
+    .time-col-header.a { color: #3b82f6; }
+    .escalado-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 6px; border-radius: 6px; margin-bottom: 4px; font-size: 13px;
+    }
+    .escalado-item.v { background: rgba(239,68,68,0.1); color: #fca5a5; }
+    .escalado-item.a { background: rgba(59,130,246,0.1); color: #93c5fd; }
+    .escalado-num { font-weight: 700; margin-right: 6px; font-size: 12px; }
+    .remover-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 14px; padding: 0 2px; }
+    .remover-btn:hover { color: #ef4444; }
+
+    .disponiveis-lista { display: flex; flex-wrap: wrap; gap: 6px; }
+    .disp-btn {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px;
+      padding: 6px 10px; font-size: 13px; color: #ccc; cursor: pointer;
+      display: flex; align-items: center; gap: 6px; transition: background 0.15s;
+    }
+    .disp-btn:hover { background: #222; }
+    .disp-num { font-weight: 700; color: #f59e0b; font-size: 12px; }
+    .disp-acoes { display: flex; gap: 4px; }
+    .disp-acoes button { font-size: 10px; padding: 3px 8px; border-radius: 5px; cursor: pointer; border: none; font-weight: 600; }
+    .disp-acoes .av { background: rgba(239,68,68,0.2); color: #ef4444; }
+    .disp-acoes .aa { background: rgba(59,130,246,0.2); color: #3b82f6; }
+  </style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>Painel Admin</h1>
+    <p>Racha de Sábado</p>
+    <input type="password" id="senha-input" placeholder="Senha de acesso" onkeydown="if(event.key==='Enter') entrar()">
+    <div id="login-erro" class="login-erro" style="display:none">Senha incorreta.</div>
+    <button class="btn btn-primary" style="width:100%" onclick="entrar()">Entrar</button>
+  </div>
+</div>
+
+<!-- TELA ADMIN -->
+<div id="admin-screen">
+  <nav>
+    <span class="nav-logo">ADMIN <span>·</span> RACHA</span>
+    <button class="sair-btn" onclick="sair()">Sair</button>
+  </nav>
+
+  <main>
+    <div class="tabs">
+      <button class="tab active" onclick="mudarTab('jogadores', this)">Jogadores</button>
+      <button class="tab" onclick="mudarTab('serie', this)">Nova Série</button>
+      <button class="tab" onclick="mudarTab('escalacao', this)">Escalação</button>
+    </div>
+
+    <!-- ===== SEÇÃO: JOGADORES ===== -->
+    <div id="secao-jogadores" class="secao ativa">
+      <div class="card">
+        <div class="card-titulo">Cadastrar jogador</div>
+        <div class="form-cols">
+          <div class="form-row">
+            <label>Número da camisa</label>
+            <input type="number" id="jog-numero" placeholder="Ex: 25" min="1" max="99">
+          </div>
+          <div class="form-row">
+            <label>Apelido</label>
+            <input type="text" id="jog-apelido" placeholder="Ex: Juninho">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Nome completo</label>
+          <input type="text" id="jog-nome" placeholder="Ex: João Silva">
+        </div>
+        <button class="btn btn-primary" onclick="cadastrarJogador()">Cadastrar jogador</button>
+        <div id="feedback-jogador"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Jogadores cadastrados</div>
+        <div id="lista-jogadores"><p style="color:#555;font-size:13px">Carregando...</p></div>
+      </div>
+    </div>
+
+    <!-- ===== SEÇÃO: NOVA SÉRIE ===== -->
+    <div id="secao-serie" class="secao">
+      <div class="card">
+        <div class="card-titulo">Criar nova série</div>
+        <div class="form-cols">
+          <div class="form-row">
+            <label>Número da série</label>
+            <input type="number" id="serie-numero" placeholder="Ex: 5" min="1">
+          </div>
+          <div class="form-row" style="opacity:0.5">
+            <label>Temporada</label>
+            <input type="text" id="serie-temporada" disabled placeholder="2026 (ativa)">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Capitão Vermelho</label>
+          <select id="serie-cap-verm">
+            <option value="">Selecione o capitão vermelho...</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Capitão Azul</label>
+          <select id="serie-cap-azul">
+            <option value="">Selecione o capitão azul...</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="criarSerie()">Criar série</button>
+        <div id="feedback-serie"></div>
+      </div>
+    </div>
+
+    <!-- ===== SEÇÃO: ESCALAÇÃO ===== -->
+    <div id="secao-escalacao" class="secao">
+      <div class="card">
+        <div class="card-titulo">Selecionar série</div>
+        <div class="form-row">
+          <select id="escal-serie" onchange="carregarEscalacao()">
+            <option value="">Selecione a série...</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="escalacao-area" style="display:none">
+        <div class="card">
+          <div class="card-titulo">Times escalados</div>
+          <div class="times-grid">
+            <div class="time-col">
+              <div class="time-col-header v">Vermelho</div>
+              <div id="time-vermelho"></div>
+            </div>
+            <div class="time-col">
+              <div class="time-col-header a">Azul</div>
+              <div id="time-azul"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-titulo">Jogadores disponíveis — clique para escalar</div>
+          <div id="disponiveis-lista" class="disponiveis-lista"></div>
+          <div id="feedback-escal" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // =============================================
+  const SUPABASE_URL = 'https://eudmuboergcgqbvchafb.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1ZG11Ym9lcmdjZ3FidmNoYWZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjI4NTMsImV4cCI6MjA5MzEzODg1M30.KcJSQngYhqXsrH8J5Pj2Up2f2LXeFndwHI0hPm5CDIE';
+  const ADMIN_SENHA  = 'racha2026';   // ← troque para sua senha
+  // =============================================
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let temporadaAtiva = null;
+  let todosJogadores = [];
+  let escalacaoAtual = [];
+
+  // --- AUTH ---
+  function entrar() {
+    const v = document.getElementById('senha-input').value;
+    if (v === ADMIN_SENHA) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-screen').style.display = 'block';
+      iniciarAdmin();
+    } else {
+      document.getElementById('login-erro').style.display = 'block';
+    }
+  }
+  function sair() {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('admin-screen').style.display = 'none';
+    document.getElementById('senha-input').value = '';
+  }
+
+  // --- TABS ---
+  function mudarTab(nome, btn) {
+    document.querySelectorAll('.secao').forEach(s => s.classList.remove('ativa'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('secao-' + nome).classList.add('ativa');
+    btn.classList.add('active');
+    if (nome === 'serie' || nome === 'escalacao') carregarSelects();
+  }
+
+  // --- INIT ---
+  async function iniciarAdmin() {
+    const { data } = await db.from('temporadas').select('*').eq('status', 'ativa').limit(1);
+    if (data && data.length > 0) {
+      temporadaAtiva = data[0];
+      document.getElementById('serie-temporada').placeholder = `Temporada ${temporadaAtiva.ano}`;
+    }
+    await carregarJogadores();
+  }
+
+  // --- JOGADORES ---
+  async function carregarJogadores() {
+    const { data } = await db.from('jogadores').select('*').eq('ativo', true).order('numero');
+    todosJogadores = data || [];
+    renderListaJogadores();
+    popularSelects();
+  }
+
+  function renderListaJogadores() {
+    const el = document.getElementById('lista-jogadores');
+    if (todosJogadores.length === 0) {
+      el.innerHTML = '<p style="color:#555;font-size:13px">Nenhum jogador cadastrado ainda.</p>';
+      return;
+    }
+    el.innerHTML = todosJogadores.map(j => `
+      <div class="jogador-item">
+        <div class="num-badge">${j.numero}</div>
+        <div class="jogador-info">
+          <div class="nome">${j.nome}</div>
+          ${j.apelido ? `<div class="apelido">${j.apelido}</div>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  async function cadastrarJogador() {
+    const numero = parseInt(document.getElementById('jog-numero').value);
+    const nome = document.getElementById('jog-nome').value.trim();
+    const apelido = document.getElementById('jog-apelido').value.trim();
+    const fb = document.getElementById('feedback-jogador');
+
+    if (!numero || !nome) {
+      fb.innerHTML = '<div class="feedback erro">Preencha o número e o nome.</div>'; return;
+    }
+
+    const { error } = await db.from('jogadores').insert({ numero, nome, apelido: apelido || null, ativo: true });
+
+    if (error) {
+      fb.innerHTML = `<div class="feedback erro">${error.code === '23505' ? 'Esse número já está em uso.' : 'Erro ao cadastrar.'}</div>`;
+    } else {
+      fb.innerHTML = '<div class="feedback ok">Jogador cadastrado com sucesso!</div>';
+      document.getElementById('jog-numero').value = '';
+      document.getElementById('jog-nome').value = '';
+      document.getElementById('jog-apelido').value = '';
+      await carregarJogadores();
+      setTimeout(() => fb.innerHTML = '', 3000);
+    }
+  }
+
+  // --- SELECTS ---
+  function popularSelects() {
+    const opcoes = todosJogadores.map(j =>
+      `<option value="${j.id}">#${j.numero} ${j.apelido || j.nome.split(' ')[0]}</option>`).join('');
+    document.getElementById('serie-cap-verm').innerHTML = '<option value="">Capitão Vermelho...</option>' + opcoes;
+    document.getElementById('serie-cap-azul').innerHTML = '<option value="">Capitão Azul...</option>' + opcoes;
+  }
+
+  async function carregarSelects() {
+    popularSelects();
+    // Carregar séries para escalação
+    const { data: series } = await db
+      .from('series')
+      .select('*, cap_vermelho:jogadores!cap_vermelho_id(numero,apelido,nome), cap_azul:jogadores!cap_azul_id(numero,apelido,nome)')
+      .order('numero', { ascending: false });
+
+    const sel = document.getElementById('escal-serie');
+    sel.innerHTML = '<option value="">Selecione a série...</option>' +
+      (series || []).map(s => {
+        const nv = s.cap_vermelho ? (s.cap_vermelho.apelido || s.cap_vermelho.nome.split(' ')[0]) : '?';
+        const na = s.cap_azul ? (s.cap_azul.apelido || s.cap_azul.nome.split(' ')[0]) : '?';
+        return `<option value="${s.id}">Série ${s.numero} · ${nv} × ${na}</option>`;
+      }).join('');
+  }
+
+  // --- CRIAR SÉRIE ---
+  async function criarSerie() {
+    const numero = parseInt(document.getElementById('serie-numero').value);
+    const capV = document.getElementById('serie-cap-verm').value;
+    const capA = document.getElementById('serie-cap-azul').value;
+    const fb = document.getElementById('feedback-serie');
+
+    if (!numero || !capV || !capA || !temporadaAtiva) {
+      fb.innerHTML = '<div class="feedback erro">Preencha todos os campos.</div>'; return;
+    }
+    if (capV === capA) {
+      fb.innerHTML = '<div class="feedback erro">Os capitães não podem ser o mesmo jogador.</div>'; return;
+    }
+
+    const { error } = await db.from('series').insert({
+      temporada_id: temporadaAtiva.id,
+      numero,
+      cap_vermelho_id: parseInt(capV),
+      cap_azul_id: parseInt(capA),
+      status: 'em_andamento'
+    });
+
+    if (error) {
+      fb.innerHTML = '<div class="feedback erro">Erro ao criar série.</div>';
+    } else {
+      fb.innerHTML = '<div class="feedback ok">Série criada! Vá para a aba Escalação para montar os times.</div>';
+      document.getElementById('serie-numero').value = '';
+      await carregarSelects();
+    }
+  }
+
+  // --- ESCALAÇÃO ---
+  async function carregarEscalacao() {
+    const serieId = document.getElementById('escal-serie').value;
+    const area = document.getElementById('escalacao-area');
+    if (!serieId) { area.style.display = 'none'; return; }
+    area.style.display = 'block';
+
+    const { data } = await db
+      .from('escalacoes')
+      .select('*, jogador:jogadores(id,numero,nome,apelido)')
+      .eq('serie_id', serieId);
+
+    escalacaoAtual = data || [];
+    renderEscalacao(parseInt(serieId));
+  }
+
+  function renderEscalacao(serieId) {
+    const verm = escalacaoAtual.filter(e => e.time === 'vermelho').sort((a,b) => a.jogador.numero - b.jogador.numero);
+    const azul = escalacaoAtual.filter(e => e.time === 'azul').sort((a,b) => a.jogador.numero - b.jogador.numero);
+    const escaladosIds = new Set(escalacaoAtual.map(e => e.jogador_id));
+
+    const renderEscalado = (lista, cor, cls) => lista.map(e => `
+      <div class="escalado-item ${cls}">
+        <span><span class="escalado-num">#${e.jogador.numero}</span> ${e.jogador.apelido || e.jogador.nome.split(' ')[0]}</span>
+        <button class="remover-btn" onclick="removerEscalacao(${e.id}, ${serieId})" title="Remover">×</button>
+      </div>`).join('') || `<p style="color:#333;font-size:12px">Vazio</p>`;
+
+    document.getElementById('time-vermelho').innerHTML = renderEscalado(verm, 'vermelho', 'v');
+    document.getElementById('time-azul').innerHTML = renderEscalado(azul, 'azul', 'a');
+
+    const disponiveis = todosJogadores.filter(j => !escaladosIds.has(j.id));
+    document.getElementById('disponiveis-lista').innerHTML = disponiveis.length === 0
+      ? '<p style="color:#555;font-size:13px">Todos os jogadores já foram escalados.</p>'
+      : disponiveis.map(j => `
+          <div class="disp-btn">
+            <span class="disp-num">#${j.numero}</span>
+            <span>${j.apelido || j.nome.split(' ')[0]}</span>
+            <div class="disp-acoes">
+              <button class="av" onclick="escalar(${j.id}, 'vermelho', ${serieId})">V</button>
+              <button class="aa" onclick="escalar(${j.id}, 'azul', ${serieId})">A</button>
+            </div>
+          </div>`).join('');
+  }
+
+  async function escalar(jogadorId, time, serieId) {
+    const fb = document.getElementById('feedback-escal');
+    const { error } = await db.from('escalacoes').insert({
+      serie_id: serieId, jogador_id: jogadorId, time, e_capitao: false
+    });
+    if (error) {
+      fb.innerHTML = '<div class="feedback erro">Erro ao escalar.</div>';
+    } else {
+      const { data } = await db.from('escalacoes').select('*, jogador:jogadores(id,numero,nome,apelido)').eq('serie_id', serieId);
+      escalacaoAtual = data || [];
+      renderEscalacao(serieId);
+    }
+  }
+
+  async function removerEscalacao(escalacaoId, serieId) {
+    await db.from('escalacoes').delete().eq('id', escalacaoId);
+    const { data } = await db.from('escalacoes').select('*, jogador:jogadores(id,numero,nome,apelido)').eq('serie_id', serieId);
+    escalacaoAtual = data || [];
+    renderEscalacao(serieId);
+  }
+</script>
+</body>
+</html>
