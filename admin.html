@@ -5,143 +5,172 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin · Racha de Sábado</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #f0f0f0; min-height: 100vh; }
 
-    /* LOGIN */
-    #login-screen {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; padding: 1rem;
-    }
-    .login-card {
-      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px;
-      padding: 2rem; width: 100%; max-width: 360px; text-align: center;
-    }
+    #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
+    .login-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 2rem; width: 100%; max-width: 360px; text-align: center; }
     .login-card h1 { font-size: 18px; margin-bottom: 6px; }
     .login-card p { font-size: 13px; color: #555; margin-bottom: 1.5rem; }
-    .login-card input {
-      width: 100%; padding: 10px 14px; background: #111; border: 1px solid #2a2a2a;
-      border-radius: 8px; color: #fff; font-size: 15px; margin-bottom: 12px; outline: none;
-    }
+    .login-card input { width: 100%; padding: 10px 14px; background: #111; border: 1px solid #2a2a2a; border-radius: 8px; color: #fff; font-size: 15px; margin-bottom: 12px; outline: none; }
     .login-card input:focus { border-color: #444; }
     .login-erro { font-size: 12px; color: #ef4444; margin-top: -6px; margin-bottom: 10px; }
 
-    /* LAYOUT ADMIN */
     #admin-screen { display: none; }
-    nav {
-      background: #1a1a1a; border-bottom: 1px solid #2a2a2a;
-      padding: 0 1rem; display: flex; align-items: center;
-      justify-content: space-between; height: 52px;
-      position: sticky; top: 0; z-index: 100;
-    }
+    nav { background: #1a1a1a; border-bottom: 1px solid #2a2a2a; padding: 0 1rem; display: flex; align-items: center; justify-content: space-between; height: 52px; position: sticky; top: 0; z-index: 100; }
     .nav-logo { font-size: 15px; font-weight: 700; color: #fff; }
     .nav-logo span { color: #f59e0b; }
-    .sair-btn {
-      font-size: 12px; color: #555; background: none; border: 1px solid #2a2a2a;
-      border-radius: 6px; padding: 4px 10px; cursor: pointer; color: #888;
-    }
+    .sair-btn { font-size: 12px; background: none; border: 1px solid #2a2a2a; border-radius: 6px; padding: 4px 10px; cursor: pointer; color: #888; }
     .sair-btn:hover { color: #fff; border-color: #444; }
 
     main { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
 
-    /* TABS */
-    .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 4px; }
-    .tab {
-      flex: 1; padding: 8px; border-radius: 7px; background: none; border: none;
-      color: #555; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
-    }
+    .tabs { display: flex; gap: 3px; margin-bottom: 1.5rem; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 4px; overflow-x: auto; }
+    .tab { flex: 1; min-width: 80px; padding: 8px 6px; border-radius: 7px; background: none; border: none; color: #555; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .tab:hover { color: #aaa; }
     .tab.active { background: #2a2a2a; color: #fff; }
 
-    /* SEÇÕES */
     .secao { display: none; }
     .secao.ativa { display: block; }
 
-    /* CARDS */
-    .card {
-      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
-      padding: 1.25rem; margin-bottom: 1rem;
-    }
+    .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
     .card-titulo { font-size: 14px; font-weight: 600; margin-bottom: 1rem; color: #aaa; }
+    .card-subtitulo { font-size: 12px; color: #555; margin-bottom: 10px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
 
-    /* FORM */
     .form-row { margin-bottom: 12px; }
     .form-row label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
-    .form-row input, .form-row select {
-      width: 100%; padding: 9px 12px; background: #111; border: 1px solid #2a2a2a;
-      border-radius: 8px; color: #fff; font-size: 14px; outline: none;
-    }
+    .form-row input, .form-row select { width: 100%; padding: 9px 12px; background: #111; border: 1px solid #2a2a2a; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
     .form-row input:focus, .form-row select:focus { border-color: #444; }
     .form-row select option { background: #1a1a1a; }
     .form-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
-    /* BOTÕES */
-    .btn {
-      padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500;
-      cursor: pointer; border: none; transition: opacity 0.15s;
-    }
+    .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.15s; }
     .btn:hover { opacity: 0.85; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-primary { background: #f59e0b; color: #000; }
     .btn-verm { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
     .btn-azul { background: rgba(59,130,246,0.2); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
+    .btn-green { background: rgba(34,197,94,0.2); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
     .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
-    .btn-danger { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
 
-    /* FEEDBACK */
     .feedback { font-size: 13px; margin-top: 10px; padding: 8px 12px; border-radius: 8px; }
     .feedback.ok { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
     .feedback.erro { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
 
-    /* LISTA JOGADORES */
-    .jogador-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 0; border-bottom: 1px solid #1f1f1f;
-    }
+    /* JOGADORES */
+    .jogador-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #1f1f1f; }
     .jogador-item:last-child { border-bottom: none; }
-    .num-badge {
-      width: 32px; height: 32px; border-radius: 8px; background: #222;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 700; color: #f59e0b; flex-shrink: 0;
-    }
+    .num-badge { width: 32px; height: 32px; border-radius: 8px; background: #222; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #f59e0b; flex-shrink: 0; }
     .jogador-info { flex: 1; }
     .jogador-info .nome { font-size: 14px; color: #ddd; }
     .jogador-info .apelido { font-size: 12px; color: #555; }
 
     /* ESCALAÇÃO */
     .times-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }
-    .time-col { background: #111; border-radius: 10px; padding: 10px; min-height: 120px; }
+    .time-col { background: #111; border-radius: 10px; padding: 10px; min-height: 80px; }
     .time-col-header { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
     .time-col-header.v { color: #ef4444; }
     .time-col-header.a { color: #3b82f6; }
-    .escalado-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 5px 6px; border-radius: 6px; margin-bottom: 4px; font-size: 13px;
-    }
+    .escalado-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 6px; border-radius: 6px; margin-bottom: 4px; font-size: 13px; }
     .escalado-item.v { background: rgba(239,68,68,0.1); color: #fca5a5; }
     .escalado-item.a { background: rgba(59,130,246,0.1); color: #93c5fd; }
     .escalado-num { font-weight: 700; margin-right: 6px; font-size: 12px; }
     .remover-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 14px; padding: 0 2px; }
     .remover-btn:hover { color: #ef4444; }
-
     .disponiveis-lista { display: flex; flex-wrap: wrap; gap: 6px; }
-    .disp-btn {
-      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px;
-      padding: 6px 10px; font-size: 13px; color: #ccc; cursor: pointer;
-      display: flex; align-items: center; gap: 6px; transition: background 0.15s;
-    }
-    .disp-btn:hover { background: #222; }
+    .disp-btn { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 6px 10px; font-size: 13px; color: #ccc; cursor: default; display: flex; align-items: center; gap: 6px; }
     .disp-num { font-weight: 700; color: #f59e0b; font-size: 12px; }
     .disp-acoes { display: flex; gap: 4px; }
     .disp-acoes button { font-size: 10px; padding: 3px 8px; border-radius: 5px; cursor: pointer; border: none; font-weight: 600; }
     .disp-acoes .av { background: rgba(239,68,68,0.2); color: #ef4444; }
     .disp-acoes .aa { background: rgba(59,130,246,0.2); color: #3b82f6; }
+
+    /* RESULTADOS */
+    .jogo-card { background: #111; border: 1px solid #222; border-radius: 10px; padding: 1rem; margin-bottom: 10px; }
+    .jogo-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .jogo-num-label { font-size: 13px; font-weight: 600; color: #888; }
+    .jogo-status-badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+    .jogo-status-badge.pendente { background: #222; color: #555; }
+    .jogo-status-badge.encerrado-v { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .jogo-status-badge.encerrado-a { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .jogo-status-badge.pen { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .placar-input { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .placar-input input[type=number] { width: 60px; text-align: center; font-size: 22px; font-weight: 700; padding: 8px 4px; }
+    .placar-input input[type=number].v { color: #ef4444; border-color: rgba(239,68,68,0.3); }
+    .placar-input input[type=number].a { color: #3b82f6; border-color: rgba(59,130,246,0.3); }
+    .placar-x { font-size: 18px; color: #333; }
+    .penalti-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #777; margin-bottom: 12px; }
+    .penalti-check input { width: auto; }
+
+    /* GOLS */
+    .gol-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1a1a1a; }
+    .gol-item:last-child { border-bottom: none; }
+    .gol-time-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .gol-time-dot.v { background: #ef4444; }
+    .gol-time-dot.a { background: #3b82f6; }
+    .gol-nome { flex: 1; font-size: 13px; color: #ccc; }
+    .gol-tipo { font-size: 11px; color: #555; }
+    .gol-del { background: none; border: none; color: #333; cursor: pointer; font-size: 14px; padding: 0 2px; }
+    .gol-del:hover { color: #ef4444; }
+
+    .add-gol-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-top: 10px; }
+    .add-gol-row select, .add-gol-row input { padding: 8px 10px; font-size: 13px; }
+
+    /* CARTÕES */
+    .cartao-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #1a1a1a; }
+    .cartao-item:last-child { border-bottom: none; }
+    .cartao-icon { width: 14px; height: 18px; border-radius: 2px; flex-shrink: 0; }
+    .cartao-icon.amarelo { background: #fbbf24; }
+    .cartao-icon.vermelho { background: #ef4444; }
+    .cartao-nome { flex: 1; font-size: 13px; color: #ccc; }
+    .cartao-del { background: none; border: none; color: #333; cursor: pointer; font-size: 14px; padding: 0 2px; }
+    .cartao-del:hover { color: #ef4444; }
+    .add-cartao-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; margin-top: 10px; }
+
+    /* AVALIAÇÕES */
+    .aval-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #1f1f1f; }
+    .aval-item:last-child { border-bottom: none; }
+    .aval-num { width: 28px; text-align: center; font-size: 12px; font-weight: 700; color: #f59e0b; flex-shrink: 0; }
+    .aval-nome { flex: 1; font-size: 13px; color: #ccc; }
+    .aval-nota { width: 72px; }
+    .aval-nota input { padding: 6px 8px; font-size: 14px; text-align: center; }
+    .aval-flags { display: flex; gap: 6px; }
+    .aval-flags label { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #555; cursor: pointer; white-space: nowrap; }
+    .aval-flags input[type=checkbox] { width: auto; accent-color: #f59e0b; }
+
+    /* IMPORTAÇÃO */
+    .upload-area {
+      border: 2px dashed #2a2a2a; border-radius: 12px; padding: 2.5rem 1rem;
+      text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    }
+    .upload-area:hover, .upload-area.drag { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .upload-area input[type=file] { display: none; }
+    .upload-icon { font-size: 36px; margin-bottom: 10px; }
+    .upload-label { font-size: 14px; color: #888; }
+    .upload-label strong { color: #f59e0b; }
+    .import-log { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 10px; padding: 1rem; margin-top: 1rem; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; line-height: 1.8; }
+    .log-ok   { color: #22c55e; }
+    .log-warn { color: #f59e0b; }
+    .log-erro { color: #ef4444; }
+    .log-info { color: #60a5fa; }
+    .log-sep  { color: #333; border-top: 1px solid #1a1a1a; margin: 4px 0; }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+    .preview-table th { background: #222; color: #888; padding: 6px 8px; text-align: left; font-weight: 500; }
+    .preview-table td { padding: 5px 8px; border-bottom: 1px solid #1a1a1a; color: #ccc; }
+    .preview-table tr:last-child td { border-bottom: none; }
+    .etapa-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #1f1f1f; font-size: 13px; }
+    .etapa-item:last-child { border-bottom: none; }
+    .etapa-status { width: 20px; text-align: center; font-size: 14px; }
+    .etapa-nome { flex: 1; color: #ccc; }
+    .etapa-count { font-size: 12px; color: #555; }
   </style>
 </head>
 <body>
 
-<!-- TELA DE LOGIN -->
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
     <h1>Painel Admin</h1>
@@ -152,109 +181,106 @@
   </div>
 </div>
 
-<!-- TELA ADMIN -->
+<!-- ADMIN -->
 <div id="admin-screen">
   <nav>
     <span class="nav-logo">ADMIN <span>·</span> RACHA</span>
     <button class="sair-btn" onclick="sair()">Sair</button>
   </nav>
-
   <main>
     <div class="tabs">
-      <button class="tab active" onclick="mudarTab('jogadores', this)">Jogadores</button>
-      <button class="tab" onclick="mudarTab('serie', this)">Nova Série</button>
-      <button class="tab" onclick="mudarTab('escalacao', this)">Escalação</button>
+      <button class="tab active" onclick="mudarTab('jogadores',this)">Jogadores</button>
+      <button class="tab" onclick="mudarTab('serie',this)">Nova Série</button>
+      <button class="tab" onclick="mudarTab('escalacao',this)">Escalação</button>
+      <button class="tab" onclick="mudarTab('resultados',this)">Resultados</button>
+      <button class="tab" onclick="mudarTab('avaliacoes',this)">Avaliações</button>
+      <button class="tab" onclick="mudarTab('importar',this)">📥 Importar</button>
     </div>
 
-    <!-- ===== SEÇÃO: JOGADORES ===== -->
+    <!-- JOGADORES -->
     <div id="secao-jogadores" class="secao ativa">
       <div class="card">
         <div class="card-titulo">Cadastrar jogador</div>
         <div class="form-cols">
-          <div class="form-row">
-            <label>Número da camisa</label>
-            <input type="number" id="jog-numero" placeholder="Ex: 25" min="1" max="99">
-          </div>
-          <div class="form-row">
-            <label>Apelido</label>
-            <input type="text" id="jog-apelido" placeholder="Ex: Juninho">
-          </div>
+          <div class="form-row"><label>Número da camisa</label><input type="number" id="jog-numero" placeholder="Ex: 25" min="1" max="99"></div>
+          <div class="form-row"><label>Apelido</label><input type="text" id="jog-apelido" placeholder="Ex: Juninho"></div>
         </div>
-        <div class="form-row">
-          <label>Nome completo</label>
-          <input type="text" id="jog-nome" placeholder="Ex: João Silva">
-        </div>
+        <div class="form-row"><label>Nome completo</label><input type="text" id="jog-nome" placeholder="Ex: João Silva"></div>
         <button class="btn btn-primary" onclick="cadastrarJogador()">Cadastrar jogador</button>
         <div id="feedback-jogador"></div>
       </div>
-
       <div class="card">
         <div class="card-titulo">Jogadores cadastrados</div>
         <div id="lista-jogadores"><p style="color:#555;font-size:13px">Carregando...</p></div>
       </div>
     </div>
 
-    <!-- ===== SEÇÃO: NOVA SÉRIE ===== -->
+    <!-- NOVA SÉRIE -->
     <div id="secao-serie" class="secao">
       <div class="card">
         <div class="card-titulo">Criar nova série</div>
         <div class="form-cols">
-          <div class="form-row">
-            <label>Número da série</label>
-            <input type="number" id="serie-numero" placeholder="Ex: 5" min="1">
-          </div>
-          <div class="form-row" style="opacity:0.5">
-            <label>Temporada</label>
-            <input type="text" id="serie-temporada" disabled placeholder="2026 (ativa)">
-          </div>
+          <div class="form-row"><label>Número da série</label><input type="number" id="serie-numero" placeholder="Ex: 5" min="1"></div>
+          <div class="form-row" style="opacity:0.5"><label>Temporada</label><input type="text" id="serie-temporada-label" disabled placeholder="2026"></div>
         </div>
-        <div class="form-row">
-          <label>Capitão Vermelho</label>
-          <select id="serie-cap-verm">
-            <option value="">Selecione o capitão vermelho...</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label>Capitão Azul</label>
-          <select id="serie-cap-azul">
-            <option value="">Selecione o capitão azul...</option>
-          </select>
-        </div>
+        <div class="form-row"><label>Capitão Vermelho</label><select id="serie-cap-verm"><option value="">Selecione...</option></select></div>
+        <div class="form-row"><label>Capitão Azul</label><select id="serie-cap-azul"><option value="">Selecione...</option></select></div>
         <button class="btn btn-primary" onclick="criarSerie()">Criar série</button>
         <div id="feedback-serie"></div>
       </div>
     </div>
 
-    <!-- ===== SEÇÃO: ESCALAÇÃO ===== -->
+    <!-- ESCALAÇÃO -->
     <div id="secao-escalacao" class="secao">
       <div class="card">
         <div class="card-titulo">Selecionar série</div>
-        <div class="form-row">
-          <select id="escal-serie" onchange="carregarEscalacao()">
-            <option value="">Selecione a série...</option>
-          </select>
-        </div>
+        <div class="form-row"><select id="escal-serie" onchange="carregarEscalacao()"><option value="">Selecione a série...</option></select></div>
       </div>
-
       <div id="escalacao-area" style="display:none">
         <div class="card">
           <div class="card-titulo">Times escalados</div>
           <div class="times-grid">
-            <div class="time-col">
-              <div class="time-col-header v">Vermelho</div>
-              <div id="time-vermelho"></div>
-            </div>
-            <div class="time-col">
-              <div class="time-col-header a">Azul</div>
-              <div id="time-azul"></div>
-            </div>
+            <div class="time-col"><div class="time-col-header v">Vermelho</div><div id="time-vermelho"></div></div>
+            <div class="time-col"><div class="time-col-header a">Azul</div><div id="time-azul"></div></div>
           </div>
         </div>
-
         <div class="card">
-          <div class="card-titulo">Jogadores disponíveis — clique para escalar</div>
+          <div class="card-titulo">Disponíveis — clique V ou A para escalar</div>
           <div id="disponiveis-lista" class="disponiveis-lista"></div>
           <div id="feedback-escal" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTADOS -->
+    <div id="secao-resultados" class="secao">
+      <div class="card">
+        <div class="card-titulo">Selecionar série</div>
+        <div class="form-row"><select id="res-serie" onchange="carregarResultados()"><option value="">Selecione a série...</option></select></div>
+      </div>
+      <div id="resultados-area" style="display:none">
+        <div id="jogos-lista-res"></div>
+        <div class="card" style="margin-top:4px">
+          <button class="btn btn-primary" onclick="adicionarJogo()" id="btn-add-jogo">+ Adicionar jogo</button>
+          <div id="feedback-res"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AVALIAÇÕES -->
+    <div id="secao-avaliacoes" class="secao">
+      <div class="card">
+        <div class="card-titulo">Selecionar série</div>
+        <div class="form-row"><select id="aval-serie" onchange="carregarAvaliacoes()"><option value="">Selecione a série...</option></select></div>
+      </div>
+      <div id="avaliacoes-area" style="display:none">
+        <div class="card">
+          <div class="card-titulo">Notas da série · 0.0 a 5.0</div>
+          <div id="aval-lista"></div>
+          <div style="margin-top:1rem">
+            <button class="btn btn-primary" onclick="salvarAvaliacoes()">Salvar avaliações</button>
+            <div id="feedback-aval"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -262,11 +288,51 @@
   </main>
 </div>
 
+<!-- ===== SEÇÃO IMPORTAR (fora do main para não quebrar layout) ===== -->
+<div id="secao-importar" class="secao" style="max-width:640px;margin:0 auto;padding:0 1rem 4rem;display:none">
+
+  <div class="card" style="margin-top:0">
+    <div class="card-titulo">Importar dados via planilha Excel</div>
+    <p style="font-size:13px;color:#666;margin-bottom:1rem;line-height:1.6">
+      Use a planilha <strong style="color:#f59e0b">racha_importacao.xlsx</strong> preenchida.
+      O sistema vai ler as 7 abas em ordem e inserir tudo no banco.<br>
+      <span style="color:#ef4444;font-size:12px">⚠️ Jogadores já cadastrados serão ignorados (pelo número de camisa).</span>
+    </p>
+
+    <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
+      <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFile(this.files[0])">
+      <div class="upload-icon">📊</div>
+      <div class="upload-label">Clique ou arraste o arquivo aqui<br><strong>racha_importacao.xlsx</strong></div>
+    </div>
+  </div>
+
+  <div id="preview-card" class="card" style="display:none">
+    <div class="card-titulo">Resumo do arquivo</div>
+    <div id="etapas-lista"></div>
+    <div style="margin-top:1rem;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btn-importar" onclick="executarImportacao()">✅ Confirmar importação</button>
+      <button class="btn" style="background:#222;color:#888;border:1px solid #2a2a2a" onclick="cancelarImport()">Cancelar</button>
+    </div>
+  </div>
+
+  <div id="log-card" class="card" style="display:none">
+    <div class="card-titulo">Log de importação</div>
+    <div class="import-log" id="import-log"></div>
+    <div style="margin-top:1rem">
+      <button class="btn btn-primary" onclick="location.reload()">Recarregar admin</button>
+    </div>
+  </div>
+
+</div>
+
 <script>
   // =============================================
-  const SUPABASE_URL = 'https://eudmuboergcgqbvchafb.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1ZG11Ym9lcmdjZ3FidmNoYWZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjI4NTMsImV4cCI6MjA5MzEzODg1M30.KcJSQngYhqXsrH8J5Pj2Up2f2LXeFndwHI0hPm5CDIE';
-  const ADMIN_SENHA  = 'racha2026';   // ← troque para sua senha
+  const SUPABASE_URL = 'SUA_URL_AQUI';
+  const SUPABASE_KEY = 'SUA_CHAVE_ANON_AQUI';
+  const ADMIN_SENHA  = 'racha2026';
   // =============================================
 
   const { createClient } = supabase;
@@ -275,11 +341,12 @@
   let temporadaAtiva = null;
   let todosJogadores = [];
   let escalacaoAtual = [];
+  let serieAtualRes = null;
+  let escalacaoRes = [];
 
-  // --- AUTH ---
+  // AUTH
   function entrar() {
-    const v = document.getElementById('senha-input').value;
-    if (v === ADMIN_SENHA) {
+    if (document.getElementById('senha-input').value === ADMIN_SENHA) {
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('admin-screen').style.display = 'block';
       iniciarAdmin();
@@ -293,26 +360,27 @@
     document.getElementById('senha-input').value = '';
   }
 
-  // --- TABS ---
+  // TABS
   function mudarTab(nome, btn) {
     document.querySelectorAll('.secao').forEach(s => s.classList.remove('ativa'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById('secao-' + nome).classList.add('ativa');
     btn.classList.add('active');
-    if (nome === 'serie' || nome === 'escalacao') carregarSelects();
+    if (['serie','escalacao','resultados','avaliacoes'].includes(nome)) carregarSelects();
   }
 
-  // --- INIT ---
+  // INIT
   async function iniciarAdmin() {
-    const { data } = await db.from('temporadas').select('*').eq('status', 'ativa').limit(1);
+    const { data } = await db.from('temporadas').select('*').eq('status','ativa').limit(1);
     if (data && data.length > 0) {
       temporadaAtiva = data[0];
-      document.getElementById('serie-temporada').placeholder = `Temporada ${temporadaAtiva.ano}`;
+      const lbl = document.getElementById('serie-temporada-label');
+      if (lbl) lbl.placeholder = `${temporadaAtiva.ano}`;
     }
     await carregarJogadores();
   }
 
-  // --- JOGADORES ---
+  // JOGADORES
   async function carregarJogadores() {
     const { data } = await db.from('jogadores').select('*').eq('ativo', true).order('numero');
     todosJogadores = data || [];
@@ -322,10 +390,7 @@
 
   function renderListaJogadores() {
     const el = document.getElementById('lista-jogadores');
-    if (todosJogadores.length === 0) {
-      el.innerHTML = '<p style="color:#555;font-size:13px">Nenhum jogador cadastrado ainda.</p>';
-      return;
-    }
+    if (!todosJogadores.length) { el.innerHTML = '<p style="color:#555;font-size:13px">Nenhum jogador cadastrado.</p>'; return; }
     el.innerHTML = todosJogadores.map(j => `
       <div class="jogador-item">
         <div class="num-badge">${j.numero}</div>
@@ -341,17 +406,12 @@
     const nome = document.getElementById('jog-nome').value.trim();
     const apelido = document.getElementById('jog-apelido').value.trim();
     const fb = document.getElementById('feedback-jogador');
-
-    if (!numero || !nome) {
-      fb.innerHTML = '<div class="feedback erro">Preencha o número e o nome.</div>'; return;
-    }
-
+    if (!numero || !nome) { fb.innerHTML = '<div class="feedback erro">Preencha o número e o nome.</div>'; return; }
     const { error } = await db.from('jogadores').insert({ numero, nome, apelido: apelido || null, ativo: true });
-
     if (error) {
-      fb.innerHTML = `<div class="feedback erro">${error.code === '23505' ? 'Esse número já está em uso.' : 'Erro ao cadastrar.'}</div>`;
+      fb.innerHTML = `<div class="feedback erro">${error.code==='23505' ? 'Número já em uso.' : 'Erro ao cadastrar.'}</div>`;
     } else {
-      fb.innerHTML = '<div class="feedback ok">Jogador cadastrado com sucesso!</div>';
+      fb.innerHTML = '<div class="feedback ok">Jogador cadastrado!</div>';
       document.getElementById('jog-numero').value = '';
       document.getElementById('jog-nome').value = '';
       document.getElementById('jog-apelido').value = '';
@@ -360,125 +420,599 @@
     }
   }
 
-  // --- SELECTS ---
+  // SELECTS GLOBAIS
   function popularSelects() {
-    const opcoes = todosJogadores.map(j =>
-      `<option value="${j.id}">#${j.numero} ${j.apelido || j.nome.split(' ')[0]}</option>`).join('');
-    document.getElementById('serie-cap-verm').innerHTML = '<option value="">Capitão Vermelho...</option>' + opcoes;
-    document.getElementById('serie-cap-azul').innerHTML = '<option value="">Capitão Azul...</option>' + opcoes;
+    const opcoes = todosJogadores.map(j => `<option value="${j.id}">#${j.numero} ${j.apelido || j.nome.split(' ')[0]}</option>`).join('');
+    ['serie-cap-verm','serie-cap-azul'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<option value="">Selecione...</option>' + opcoes;
+    });
   }
 
   async function carregarSelects() {
     popularSelects();
-    // Carregar séries para escalação
     const { data: series } = await db
       .from('series')
-      .select('*, cap_vermelho:jogadores!cap_vermelho_id(numero,apelido,nome), cap_azul:jogadores!cap_azul_id(numero,apelido,nome)')
+      .select('*, cv:jogadores!cap_vermelho_id(numero,apelido,nome), ca:jogadores!cap_azul_id(numero,apelido,nome)')
       .order('numero', { ascending: false });
 
-    const sel = document.getElementById('escal-serie');
-    sel.innerHTML = '<option value="">Selecione a série...</option>' +
-      (series || []).map(s => {
-        const nv = s.cap_vermelho ? (s.cap_vermelho.apelido || s.cap_vermelho.nome.split(' ')[0]) : '?';
-        const na = s.cap_azul ? (s.cap_azul.apelido || s.cap_azul.nome.split(' ')[0]) : '?';
-        return `<option value="${s.id}">Série ${s.numero} · ${nv} × ${na}</option>`;
-      }).join('');
+    const label = s => {
+      const nv = s.cv ? (s.cv.apelido || s.cv.nome.split(' ')[0]) : '?';
+      const na = s.ca ? (s.ca.apelido || s.ca.nome.split(' ')[0]) : '?';
+      return `Série ${s.numero} · ${nv} × ${na}`;
+    };
+    const opts = (series || []).map(s => `<option value="${s.id}">${label(s)}</option>`).join('');
+    ['escal-serie','res-serie','aval-serie'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<option value="">Selecione a série...</option>' + opts;
+    });
   }
 
-  // --- CRIAR SÉRIE ---
+  // CRIAR SÉRIE
   async function criarSerie() {
     const numero = parseInt(document.getElementById('serie-numero').value);
     const capV = document.getElementById('serie-cap-verm').value;
     const capA = document.getElementById('serie-cap-azul').value;
     const fb = document.getElementById('feedback-serie');
-
-    if (!numero || !capV || !capA || !temporadaAtiva) {
-      fb.innerHTML = '<div class="feedback erro">Preencha todos os campos.</div>'; return;
-    }
-    if (capV === capA) {
-      fb.innerHTML = '<div class="feedback erro">Os capitães não podem ser o mesmo jogador.</div>'; return;
-    }
-
-    const { error } = await db.from('series').insert({
-      temporada_id: temporadaAtiva.id,
-      numero,
-      cap_vermelho_id: parseInt(capV),
-      cap_azul_id: parseInt(capA),
-      status: 'em_andamento'
-    });
-
-    if (error) {
-      fb.innerHTML = '<div class="feedback erro">Erro ao criar série.</div>';
-    } else {
-      fb.innerHTML = '<div class="feedback ok">Série criada! Vá para a aba Escalação para montar os times.</div>';
-      document.getElementById('serie-numero').value = '';
-      await carregarSelects();
-    }
+    if (!numero || !capV || !capA || !temporadaAtiva) { fb.innerHTML = '<div class="feedback erro">Preencha todos os campos.</div>'; return; }
+    if (capV === capA) { fb.innerHTML = '<div class="feedback erro">Capitães não podem ser o mesmo jogador.</div>'; return; }
+    const { error } = await db.from('series').insert({ temporada_id: temporadaAtiva.id, numero, cap_vermelho_id: parseInt(capV), cap_azul_id: parseInt(capA), status: 'em_andamento' });
+    if (error) { fb.innerHTML = '<div class="feedback erro">Erro ao criar série.</div>'; }
+    else { fb.innerHTML = '<div class="feedback ok">Série criada! Vá para Escalação.</div>'; document.getElementById('serie-numero').value = ''; await carregarSelects(); }
   }
 
-  // --- ESCALAÇÃO ---
+  // ESCALAÇÃO
   async function carregarEscalacao() {
     const serieId = document.getElementById('escal-serie').value;
     const area = document.getElementById('escalacao-area');
     if (!serieId) { area.style.display = 'none'; return; }
     area.style.display = 'block';
-
-    const { data } = await db
-      .from('escalacoes')
-      .select('*, jogador:jogadores(id,numero,nome,apelido)')
-      .eq('serie_id', serieId);
-
+    const { data } = await db.from('escalacoes').select('*, jogador:jogadores(id,numero,nome,apelido)').eq('serie_id', serieId);
     escalacaoAtual = data || [];
     renderEscalacao(parseInt(serieId));
   }
 
   function renderEscalacao(serieId) {
-    const verm = escalacaoAtual.filter(e => e.time === 'vermelho').sort((a,b) => a.jogador.numero - b.jogador.numero);
-    const azul = escalacaoAtual.filter(e => e.time === 'azul').sort((a,b) => a.jogador.numero - b.jogador.numero);
-    const escaladosIds = new Set(escalacaoAtual.map(e => e.jogador_id));
-
-    const renderEscalado = (lista, cor, cls) => lista.map(e => `
+    const verm = escalacaoAtual.filter(e => e.time==='vermelho').sort((a,b) => a.jogador.numero - b.jogador.numero);
+    const azul = escalacaoAtual.filter(e => e.time==='azul').sort((a,b) => a.jogador.numero - b.jogador.numero);
+    const ids = new Set(escalacaoAtual.map(e => e.jogador_id));
+    const nome = j => j.apelido || j.nome.split(' ')[0];
+    const renderEsc = (lista, cls) => lista.map(e => `
       <div class="escalado-item ${cls}">
-        <span><span class="escalado-num">#${e.jogador.numero}</span> ${e.jogador.apelido || e.jogador.nome.split(' ')[0]}</span>
-        <button class="remover-btn" onclick="removerEscalacao(${e.id}, ${serieId})" title="Remover">×</button>
-      </div>`).join('') || `<p style="color:#333;font-size:12px">Vazio</p>`;
-
-    document.getElementById('time-vermelho').innerHTML = renderEscalado(verm, 'vermelho', 'v');
-    document.getElementById('time-azul').innerHTML = renderEscalado(azul, 'azul', 'a');
-
-    const disponiveis = todosJogadores.filter(j => !escaladosIds.has(j.id));
-    document.getElementById('disponiveis-lista').innerHTML = disponiveis.length === 0
-      ? '<p style="color:#555;font-size:13px">Todos os jogadores já foram escalados.</p>'
-      : disponiveis.map(j => `
+        <span><span class="escalado-num">#${e.jogador.numero}</span>${nome(e.jogador)}</span>
+        <button class="remover-btn" onclick="removerEscalacao(${e.id},${serieId})">×</button>
+      </div>`).join('') || '<p style="color:#333;font-size:12px">Vazio</p>';
+    document.getElementById('time-vermelho').innerHTML = renderEsc(verm,'v');
+    document.getElementById('time-azul').innerHTML = renderEsc(azul,'a');
+    const disp = todosJogadores.filter(j => !ids.has(j.id));
+    document.getElementById('disponiveis-lista').innerHTML = !disp.length
+      ? '<p style="color:#555;font-size:13px">Todos escalados.</p>'
+      : disp.map(j => `
           <div class="disp-btn">
             <span class="disp-num">#${j.numero}</span>
-            <span>${j.apelido || j.nome.split(' ')[0]}</span>
+            <span>${nome(j)}</span>
             <div class="disp-acoes">
-              <button class="av" onclick="escalar(${j.id}, 'vermelho', ${serieId})">V</button>
-              <button class="aa" onclick="escalar(${j.id}, 'azul', ${serieId})">A</button>
+              <button class="av" onclick="escalar(${j.id},'vermelho',${serieId})">V</button>
+              <button class="aa" onclick="escalar(${j.id},'azul',${serieId})">A</button>
             </div>
           </div>`).join('');
   }
 
-  async function escalar(jogadorId, time, serieId) {
-    const fb = document.getElementById('feedback-escal');
-    const { error } = await db.from('escalacoes').insert({
-      serie_id: serieId, jogador_id: jogadorId, time, e_capitao: false
-    });
-    if (error) {
-      fb.innerHTML = '<div class="feedback erro">Erro ao escalar.</div>';
-    } else {
-      const { data } = await db.from('escalacoes').select('*, jogador:jogadores(id,numero,nome,apelido)').eq('serie_id', serieId);
-      escalacaoAtual = data || [];
-      renderEscalacao(serieId);
-    }
-  }
-
-  async function removerEscalacao(escalacaoId, serieId) {
-    await db.from('escalacoes').delete().eq('id', escalacaoId);
+  async function escalar(jogId, time, serieId) {
+    await db.from('escalacoes').insert({ serie_id: serieId, jogador_id: jogId, time, e_capitao: false });
     const { data } = await db.from('escalacoes').select('*, jogador:jogadores(id,numero,nome,apelido)').eq('serie_id', serieId);
     escalacaoAtual = data || [];
     renderEscalacao(serieId);
+  }
+
+  async function removerEscalacao(id, serieId) {
+    await db.from('escalacoes').delete().eq('id', id);
+    const { data } = await db.from('escalacoes').select('*, jogador:jogadores(id,numero,nome,apelido)').eq('serie_id', serieId);
+    escalacaoAtual = data || [];
+    renderEscalacao(serieId);
+  }
+
+  // ===== RESULTADOS =====
+  async function carregarResultados() {
+    const serieId = document.getElementById('res-serie').value;
+    const area = document.getElementById('resultados-area');
+    if (!serieId) { area.style.display = 'none'; return; }
+    area.style.display = 'block';
+    serieAtualRes = parseInt(serieId);
+
+    const { data: esc } = await db.from('escalacoes').select('*, jogador:jogadores(id,numero,nome,apelido)').eq('serie_id', serieId);
+    escalacaoRes = esc || [];
+
+    await renderJogos();
+  }
+
+  async function renderJogos() {
+    const { data: jogos } = await db.from('jogos').select('*').eq('serie_id', serieAtualRes).order('numero_jogo');
+    const { data: gols } = await db.from('gols').select('*, jogador:jogadores(id,numero,nome,apelido)').in('jogo_id', (jogos||[]).map(j=>j.id));
+    const { data: cartoes } = await db.from('cartoes').select('*, jogador:jogadores(id,numero,nome,apelido)').in('jogo_id', (jogos||[]).map(j=>j.id));
+
+    const container = document.getElementById('jogos-lista-res');
+    container.innerHTML = (jogos||[]).map(j => renderJogoCard(j, gols||[], cartoes||[])).join('');
+
+    const btn = document.getElementById('btn-add-jogo');
+    btn.disabled = (jogos||[]).length >= 3;
+    btn.textContent = (jogos||[]).length >= 3 ? 'Máximo de 3 jogos por série' : '+ Adicionar jogo';
+  }
+
+  function renderJogoCard(j, gols, cartoes) {
+    const golsJogo = gols.filter(g => g.jogo_id === j.id);
+    const cartoesJogo = cartoes.filter(c => c.jogo_id === j.id);
+    const nome = jog => `#${jog.numero} ${jog.apelido || jog.nome.split(' ')[0]}`;
+    const timeCor = id => { const e = escalacaoRes.find(e => e.jogador_id === id); return e ? e.time : 'azul'; };
+
+    let statusClass = 'pendente', statusLabel = 'Pendente';
+    if (j.vencedor === 'vermelho') { statusClass = 'encerrado-v'; statusLabel = 'Vermelho venceu'; }
+    else if (j.vencedor === 'azul') { statusClass = 'encerrado-a'; statusLabel = 'Azul venceu'; }
+    if (j.foi_penalti) { statusClass = 'pen'; statusLabel = 'Pênaltis'; }
+
+    const golsHTML = golsJogo.length
+      ? golsJogo.map(g => `
+          <div class="gol-item">
+            <div class="gol-time-dot ${timeCor(g.jogador_id)}"></div>
+            <span class="gol-nome">${nome(g.jogador)}</span>
+            <span class="gol-tipo">${g.tipo === 'penalti' ? '⚪ pên.' : '⚽'}</span>
+            ${g.assistencia_id ? `<span class="gol-tipo" style="color:#666">ass.</span>` : ''}
+            <button class="gol-del" onclick="deletarGol(${g.id})">×</button>
+          </div>`).join('')
+      : '<p style="color:#333;font-size:12px;padding:4px 0">Nenhum gol registrado.</p>';
+
+    const cartoesHTML = cartoesJogo.length
+      ? cartoesJogo.map(c => `
+          <div class="cartao-item">
+            <div class="cartao-icon ${c.tipo}"></div>
+            <span class="cartao-nome">${nome(c.jogador)}</span>
+            <button class="cartao-del" onclick="deletarCartao(${c.id})">×</button>
+          </div>`).join('')
+      : '<p style="color:#333;font-size:12px;padding:4px 0">Nenhum cartão.</p>';
+
+    // Montar opções de jogadores para gols
+    const optsVerm = escalacaoRes.filter(e=>e.time==='vermelho').sort((a,b)=>a.jogador.numero-b.jogador.numero)
+      .map(e=>`<option value="${e.jogador_id}">${nome(e.jogador)}</option>`).join('');
+    const optsAzul = escalacaoRes.filter(e=>e.time==='azul').sort((a,b)=>a.jogador.numero-b.jogador.numero)
+      .map(e=>`<option value="${e.jogador_id}">${nome(e.jogador)}</option>`).join('');
+    const optsAll = escalacaoRes.sort((a,b)=>a.jogador.numero-b.jogador.numero)
+      .map(e=>`<option value="${e.jogador_id}">${nome(e.jogador)}</option>`).join('');
+    const optsAssist = '<option value="">Sem assistência</option>' + optsAll;
+
+    return `
+      <div class="card jogo-card" id="jogo-card-${j.id}">
+        <div class="jogo-card-header">
+          <span class="jogo-num-label">Jogo ${j.numero_jogo}</span>
+          <span class="jogo-status-badge ${statusClass}">${statusLabel}</span>
+        </div>
+
+        <div class="placar-input">
+          <input type="number" class="v" id="gv-${j.id}" value="${j.gols_vermelho}" min="0" style="width:60px;text-align:center;font-size:22px;font-weight:700;padding:8px 4px;background:#111;border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#ef4444;outline:none">
+          <span class="placar-x">×</span>
+          <input type="number" class="a" id="ga-${j.id}" value="${j.gols_azul}" min="0" style="width:60px;text-align:center;font-size:22px;font-weight:700;padding:8px 4px;background:#111;border:1px solid rgba(59,130,246,0.3);border-radius:8px;color:#3b82f6;outline:none">
+          <button class="btn btn-sm btn-green" onclick="salvarPlacar(${j.id})" style="margin-left:4px">Salvar</button>
+          <button class="btn btn-sm btn-danger" onclick="deletarJogo(${j.id})" style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);margin-left:4px">Apagar</button>
+        </div>
+
+        <div class="penalti-check">
+          <input type="checkbox" id="pen-${j.id}" ${j.foi_penalti?'checked':''} onchange="togglePenalti(${j.id}, this.checked)">
+          <label for="pen-${j.id}">Decisão por pênaltis</label>
+        </div>
+
+        <div class="card-subtitulo" style="margin-top:8px">Gols</div>
+        <div id="gols-${j.id}">${golsHTML}</div>
+        <div class="add-gol-row">
+          <select id="gol-jog-${j.id}" style="background:#111;border:1px solid #2a2a2a;border-radius:8px;color:#fff;outline:none">
+            <optgroup label="Vermelho">${optsVerm}</optgroup>
+            <optgroup label="Azul">${optsAzul}</optgroup>
+          </select>
+          <select id="gol-tipo-${j.id}" style="background:#111;border:1px solid #2a2a2a;border-radius:8px;color:#fff;outline:none">
+            <option value="normal">Normal</option>
+            <option value="penalti">Pênalti</option>
+          </select>
+          <button class="btn btn-sm btn-primary" onclick="adicionarGol(${j.id})">+ Gol</button>
+        </div>
+        <div style="margin-top:8px">
+          <select id="gol-assist-${j.id}" style="width:100%;background:#111;border:1px solid #2a2a2a;border-radius:8px;color:#777;padding:7px 10px;font-size:13px;outline:none">${optsAssist}</select>
+        </div>
+
+        <div class="card-subtitulo" style="margin-top:14px">Cartões</div>
+        <div id="cartoes-${j.id}">${cartoesHTML}</div>
+        <div class="add-cartao-row">
+          <select id="cart-jog-${j.id}" style="background:#111;border:1px solid #2a2a2a;border-radius:8px;color:#fff;outline:none">${optsAll}</select>
+          <select id="cart-tipo-${j.id}" style="background:#111;border:1px solid #2a2a2a;border-radius:8px;color:#fff;outline:none">
+            <option value="amarelo">🟡 Amarelo</option>
+            <option value="vermelho">🔴 Vermelho</option>
+          </select>
+          <button class="btn btn-sm btn-primary" onclick="adicionarCartao(${j.id})">+ Cartão</button>
+        </div>
+      </div>`;
+  }
+
+  async function adicionarJogo() {
+    const { data: jogos } = await db.from('jogos').select('id').eq('serie_id', serieAtualRes);
+    const numero = (jogos||[]).length + 1;
+    if (numero > 3) return;
+    await db.from('jogos').insert({ serie_id: serieAtualRes, numero_jogo: numero, gols_vermelho: 0, gols_azul: 0, foi_penalti: false });
+    await renderJogos();
+  }
+
+  async function salvarPlacar(jogoId) {
+    const gv = parseInt(document.getElementById(`gv-${jogoId}`).value) || 0;
+    const ga = parseInt(document.getElementById(`ga-${jogoId}`).value) || 0;
+    const vencedor = gv > ga ? 'vermelho' : ga > gv ? 'azul' : null;
+    await db.from('jogos').update({ gols_vermelho: gv, gols_azul: ga, vencedor }).eq('id', jogoId);
+    document.getElementById('feedback-res').innerHTML = '<div class="feedback ok">Placar salvo!</div>';
+    await renderJogos();
+    setTimeout(() => { const f = document.getElementById('feedback-res'); if(f) f.innerHTML=''; }, 2000);
+  }
+
+  async function togglePenalti(jogoId, val) {
+    await db.from('jogos').update({ foi_penalti: val }).eq('id', jogoId);
+  }
+
+  async function deletarJogo(jogoId) {
+    if (!confirm('Apagar este jogo e todos os gols/cartões dele?')) return;
+    await db.from('gols').delete().eq('jogo_id', jogoId);
+    await db.from('cartoes').delete().eq('jogo_id', jogoId);
+    await db.from('jogos').delete().eq('id', jogoId);
+    await renderJogos();
+  }
+
+  async function adicionarGol(jogoId) {
+    const jogadorId = parseInt(document.getElementById(`gol-jog-${jogoId}`).value);
+    const tipo = document.getElementById(`gol-tipo-${jogoId}`).value;
+    const assistId = document.getElementById(`gol-assist-${jogoId}`).value;
+    await db.from('gols').insert({ jogo_id: jogoId, jogador_id: jogadorId, tipo, assistencia_id: assistId ? parseInt(assistId) : null });
+    await renderJogos();
+  }
+
+  async function deletarGol(golId) {
+    await db.from('gols').delete().eq('id', golId);
+    await renderJogos();
+  }
+
+  async function adicionarCartao(jogoId) {
+    const jogadorId = parseInt(document.getElementById(`cart-jog-${jogoId}`).value);
+    const tipo = document.getElementById(`cart-tipo-${jogoId}`).value;
+    await db.from('cartoes').insert({ jogo_id: jogoId, jogador_id: jogadorId, tipo });
+    await renderJogos();
+  }
+
+  async function deletarCartao(cartaoId) {
+    await db.from('cartoes').delete().eq('id', cartaoId);
+    await renderJogos();
+  }
+
+  // ===== AVALIAÇÕES =====
+  async function carregarAvaliacoes() {
+    const serieId = document.getElementById('aval-serie').value;
+    const area = document.getElementById('avaliacoes-area');
+    if (!serieId) { area.style.display = 'none'; return; }
+    area.style.display = 'block';
+
+    const { data: esc } = await db.from('escalacoes').select('*, jogador:jogadores(id,numero,nome,apelido)').eq('serie_id', serieId);
+    const { data: avals } = await db.from('avaliacoes_serie').select('*').eq('serie_id', serieId);
+
+    const jogadores = (esc||[]).sort((a,b) => a.jogador.numero - b.jogador.numero);
+    const avalMap = {};
+    (avals||[]).forEach(a => avalMap[a.jogador_id] = a);
+
+    document.getElementById('aval-lista').innerHTML = jogadores.map(e => {
+      const a = avalMap[e.jogador_id] || {};
+      const nome = e.jogador.apelido || e.jogador.nome.split(' ')[0];
+      const timeCls = e.time === 'vermelho' ? 'color:#ef4444' : 'color:#3b82f6';
+      return `
+        <div class="aval-item" data-jogador="${e.jogador_id}" data-serie="${serieId}">
+          <div class="aval-num" style="${timeCls}">${e.jogador.numero}</div>
+          <div class="aval-nome">${nome}</div>
+          <div class="aval-nota">
+            <input type="number" class="nota-input" min="0" max="5" step="0.1"
+              value="${a.nota_media || ''}" placeholder="—"
+              style="background:#111;border:1px solid #2a2a2a;border-radius:8px;color:#fff;outline:none;width:100%;padding:6px 8px;font-size:14px;text-align:center">
+          </div>
+          <div class="aval-flags">
+            <label><input type="checkbox" class="sel-input" ${a.is_selecao?'checked':''}> Seleção</label>
+            <label><input type="checkbox" class="mvp-input" ${a.is_mvp?'checked':''}> MVP ⭐</label>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function salvarAvaliacoes() {
+    const fb = document.getElementById('feedback-aval');
+    const rows = document.querySelectorAll('#aval-lista .aval-item');
+    const upserts = [];
+    rows.forEach(row => {
+      const jogadorId = parseInt(row.dataset.jogador);
+      const serieId = parseInt(row.dataset.serie);
+      const nota = parseFloat(row.querySelector('.nota-input').value);
+      const isSel = row.querySelector('.sel-input').checked;
+      const isMvp = row.querySelector('.mvp-input').checked;
+      upserts.push({ serie_id: serieId, jogador_id: jogadorId, nota_media: isNaN(nota) ? null : nota, is_selecao: isSel, is_mvp: isMvp });
+    });
+
+    const { error } = await db.from('avaliacoes_serie').upsert(upserts, { onConflict: 'serie_id,jogador_id' });
+    if (error) { fb.innerHTML = '<div class="feedback erro">Erro ao salvar.</div>'; }
+    else { fb.innerHTML = '<div class="feedback ok">Avaliações salvas!</div>'; setTimeout(() => fb.innerHTML = '', 3000); }
+  }
+
+  // ===== IMPORTAÇÃO =====
+  // Sobrescreve mudarTab para lidar com a seção importar que está fora do main
+  const _mudarTabOrig = mudarTab;
+  function mudarTab(nome, btn) {
+    document.querySelectorAll('.secao').forEach(s => {
+      s.classList.remove('ativa');
+      if (s.id === 'secao-importar') s.style.display = 'none';
+    });
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    if (nome === 'importar') {
+      const el = document.getElementById('secao-importar');
+      el.style.display = 'block';
+    } else {
+      document.getElementById('secao-' + nome).classList.add('ativa');
+      if (['serie','escalacao','resultados','avaliacoes'].includes(nome)) carregarSelects();
+    }
+  }
+
+  let dadosPlanilha = null;
+
+  function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        dadosPlanilha = lerPlanilha(wb);
+        mostrarPreview(dadosPlanilha);
+      } catch(err) {
+        alert('Erro ao ler o arquivo: ' + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function lerSheet(wb, nomeAba) {
+    const sheet = wb.Sheets[nomeAba];
+    if (!sheet) return [];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    return rows;
+  }
+
+  function lerPlanilha(wb) {
+    return {
+      jogadores:   lerSheet(wb, '1 · Jogadores'),
+      series:      lerSheet(wb, '2 · Séries'),
+      escalacoes:  lerSheet(wb, '3 · Escalações'),
+      jogos:       lerSheet(wb, '4 · Jogos'),
+      gols:        lerSheet(wb, '5 · Gols'),
+      cartoes:     lerSheet(wb, '6 · Cartões'),
+      avaliacoes:  lerSheet(wb, '7 · Avaliações'),
+    };
+  }
+
+  function mostrarPreview(dados) {
+    const etapas = [
+      { nome: '1 · Jogadores',   count: dados.jogadores.length,  icone: '👕' },
+      { nome: '2 · Séries',      count: dados.series.length,     icone: '🏆' },
+      { nome: '3 · Escalações',  count: dados.escalacoes.length, icone: '📋' },
+      { nome: '4 · Jogos',       count: dados.jogos.length,      icone: '⚽' },
+      { nome: '5 · Gols',        count: dados.gols.length,       icone: '🥅' },
+      { nome: '6 · Cartões',     count: dados.cartoes.length,    icone: '🟡' },
+      { nome: '7 · Avaliações',  count: dados.avaliacoes.length, icone: '⭐' },
+    ];
+    document.getElementById('etapas-lista').innerHTML = etapas.map(e => `
+      <div class="etapa-item">
+        <div class="etapa-status">${e.icone}</div>
+        <div class="etapa-nome">${e.nome}</div>
+        <div class="etapa-count">${e.count} linha${e.count !== 1 ? 's' : ''}</div>
+      </div>`).join('');
+    document.getElementById('preview-card').style.display = 'block';
+    document.getElementById('log-card').style.display = 'none';
+  }
+
+  function cancelarImport() {
+    dadosPlanilha = null;
+    document.getElementById('preview-card').style.display = 'none';
+    document.getElementById('log-card').style.display = 'none';
+    document.getElementById('file-input').value = '';
+  }
+
+  function log(msg, tipo='info') {
+    const el = document.getElementById('import-log');
+    const div = document.createElement('div');
+    div.className = `log-${tipo}`;
+    div.textContent = msg;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+  }
+  function logSep() {
+    const el = document.getElementById('import-log');
+    const div = document.createElement('div');
+    div.className = 'log-sep';
+    div.innerHTML = '─────────────────────────────────';
+    el.appendChild(div);
+  }
+
+  async function executarImportacao() {
+    if (!dadosPlanilha) return;
+    document.getElementById('btn-importar').disabled = true;
+    document.getElementById('log-card').style.display = 'block';
+    document.getElementById('import-log').innerHTML = '';
+
+    const d = dadosPlanilha;
+    const erros = [];
+
+    // ── Mapa numero → id para jogadores ──
+    const numToId = {};
+
+    try {
+      // ── 1. JOGADORES ──────────────────────────────
+      log('📋 Importando jogadores...', 'info');
+      const { data: existentes } = await db.from('jogadores').select('id,numero');
+      (existentes || []).forEach(j => numToId[j.numero] = j.id);
+
+      let novosJog = 0, ignoradosJog = 0;
+      for (const row of d.jogadores) {
+        const numero = parseInt(row['numero']);
+        const nome = String(row['nome'] || '').trim();
+        if (!numero || !nome) { log(`  ⚠ Linha ignorada — faltam dados: ${JSON.stringify(row)}`, 'warn'); continue; }
+        if (numToId[numero]) { log(`  · #${numero} ${nome} — já existe, ignorado`, 'warn'); ignoradosJog++; continue; }
+        const ativo = String(row['ativo (SIM/NAO)'] || 'SIM').trim().toUpperCase() !== 'NAO';
+        const apelido = String(row['apelido'] || '').trim() || null;
+        const { data: ins, error } = await db.from('jogadores').insert({ numero, nome, apelido, ativo }).select('id').single();
+        if (error) { log(`  ✗ Erro ao inserir #${numero}: ${error.message}`, 'erro'); erros.push(error); }
+        else { numToId[numero] = ins.id; log(`  ✓ #${numero} ${apelido || nome}`, 'ok'); novosJog++; }
+      }
+      log(`  → ${novosJog} inseridos, ${ignoradosJog} ignorados`, 'info');
+      logSep();
+
+      // ── 2. SÉRIES ─────────────────────────────────
+      log('🏆 Importando séries...', 'info');
+      if (!temporadaAtiva) {
+        const { data: temps } = await db.from('temporadas').select('*').eq('status','ativa').limit(1);
+        if (temps && temps.length) temporadaAtiva = temps[0];
+      }
+      if (!temporadaAtiva) { log('  ✗ Nenhuma temporada ativa encontrada!', 'erro'); return; }
+
+      const serieNumToId = {};
+      const { data: seriesExist } = await db.from('series').select('id,numero').eq('temporada_id', temporadaAtiva.id);
+      (seriesExist || []).forEach(s => serieNumToId[s.numero] = s.id);
+
+      let novasSer = 0, ignoradasSer = 0;
+      for (const row of d.series) {
+        const numero = parseInt(row['numero_serie']);
+        const capV = parseInt(row['cap_vermelho (nº camisa)']);
+        const capA = parseInt(row['cap_azul (nº camisa)']);
+        const status = String(row['status'] || 'encerrada').trim();
+        if (!numero) { log(`  ⚠ Linha ignorada — número da série inválido`, 'warn'); continue; }
+        if (serieNumToId[numero]) { log(`  · Série ${numero} — já existe, ignorada`, 'warn'); ignoradasSer++; continue; }
+        if (!numToId[capV] || !numToId[capA]) { log(`  ✗ Série ${numero} — capitão não encontrado (#${capV} ou #${capA})`, 'erro'); erros.push('cap nao encontrado'); continue; }
+        const { data: ins, error } = await db.from('series').insert({ temporada_id: temporadaAtiva.id, numero, cap_vermelho_id: numToId[capV], cap_azul_id: numToId[capA], status }).select('id').single();
+        if (error) { log(`  ✗ Erro série ${numero}: ${error.message}`, 'erro'); erros.push(error); }
+        else { serieNumToId[numero] = ins.id; log(`  ✓ Série ${numero} — Cap.V #${capV} × Cap.A #${capA}`, 'ok'); novasSer++; }
+      }
+      log(`  → ${novasSer} inseridas, ${ignoradasSer} ignoradas`, 'info');
+      logSep();
+
+      // ── 3. ESCALAÇÕES ─────────────────────────────
+      log('📋 Importando escalações...', 'info');
+      let escalOk = 0, escalErro = 0;
+      for (const row of d.escalacoes) {
+        const serieNum = parseInt(row['numero_serie']);
+        const jogNum   = parseInt(row['jogador (nº camisa)']);
+        const time     = String(row['time'] || '').trim().toLowerCase();
+        const eCap     = String(row['e_capitao (SIM/NAO)'] || 'NAO').trim().toUpperCase() === 'SIM';
+        const serieId  = serieNumToId[serieNum];
+        const jogId    = numToId[jogNum];
+        if (!serieId || !jogId || !time) { log(`  ⚠ Escalação ignorada — série ${serieNum} jogador #${jogNum}`, 'warn'); escalErro++; continue; }
+        const { error } = await db.from('escalacoes').upsert({ serie_id: serieId, jogador_id: jogId, time, e_capitao: eCap }, { onConflict: 'serie_id,jogador_id', ignoreDuplicates: true });
+        if (error) { log(`  ✗ Erro escalação série ${serieNum} #${jogNum}: ${error.message}`, 'erro'); escalErro++; }
+        else escalOk++;
+      }
+      log(`  → ${escalOk} inseridas, ${escalErro} com erro/ignoradas`, escalErro > 0 ? 'warn' : 'info');
+      logSep();
+
+      // ── 4. JOGOS ──────────────────────────────────
+      log('⚽ Importando jogos...', 'info');
+      const jogoKeyToId = {};
+      let jogosOk = 0, jogosErro = 0;
+      for (const row of d.jogos) {
+        const serieNum  = parseInt(row['numero_serie']);
+        const numJogo   = parseInt(row['numero_jogo']);
+        const golsV     = parseInt(row['gols_vermelho']) || 0;
+        const golsA     = parseInt(row['gols_azul']) || 0;
+        const foiPen    = String(row['foi_penalti (SIM/NAO)'] || 'NAO').trim().toUpperCase() === 'SIM';
+        const vencedor  = String(row['vencedor'] || '').trim().toLowerCase() || null;
+        const serieId   = serieNumToId[serieNum];
+        if (!serieId || !numJogo) { log(`  ⚠ Jogo ignorado — série ${serieNum} jogo ${numJogo}`, 'warn'); jogosErro++; continue; }
+        const { data: ins, error } = await db.from('jogos').insert({ serie_id: serieId, numero_jogo: numJogo, gols_vermelho: golsV, gols_azul: golsA, foi_penalti: foiPen, vencedor }).select('id').single();
+        if (error) { log(`  ✗ Erro jogo série ${serieNum} jogo ${numJogo}: ${error.message}`, 'erro'); jogosErro++; }
+        else { jogoKeyToId[`${serieNum}_${numJogo}`] = ins.id; log(`  ✓ Série ${serieNum} · Jogo ${numJogo}: ${golsV}×${golsA}`, 'ok'); jogosOk++; }
+      }
+      log(`  → ${jogosOk} inseridos, ${jogosErro} com erro`, jogosErro > 0 ? 'warn' : 'info');
+      logSep();
+
+      // ── 5. GOLS ───────────────────────────────────
+      log('🥅 Importando gols...', 'info');
+      let golsOk = 0, golsErro = 0;
+      for (const row of d.gols) {
+        const serieNum  = parseInt(row['numero_serie']);
+        const numJogo   = parseInt(row['numero_jogo']);
+        const jogNum    = parseInt(row['jogador (nº camisa)']);
+        const tipo      = String(row['tipo'] || 'normal').trim().toLowerCase();
+        const assistNum = row['assistencia (nº camisa)'] ? parseInt(row['assistencia (nº camisa)']) : null;
+        const jogoId    = jogoKeyToId[`${serieNum}_${numJogo}`];
+        const jogId     = numToId[jogNum];
+        const assistId  = assistNum ? (numToId[assistNum] || null) : null;
+        if (!jogoId || !jogId) { log(`  ⚠ Gol ignorado — série ${serieNum} jogo ${numJogo} jogador #${jogNum}`, 'warn'); golsErro++; continue; }
+        const { error } = await db.from('gols').insert({ jogo_id: jogoId, jogador_id: jogId, tipo, assistencia_id: assistId });
+        if (error) { log(`  ✗ Erro gol: ${error.message}`, 'erro'); golsErro++; }
+        else golsOk++;
+      }
+      log(`  → ${golsOk} inseridos, ${golsErro} com erro`, golsErro > 0 ? 'warn' : 'info');
+      logSep();
+
+      // ── 6. CARTÕES ────────────────────────────────
+      if (d.cartoes.length > 0) {
+        log('🟡 Importando cartões...', 'info');
+        let cartoesOk = 0, cartoesErro = 0;
+        for (const row of d.cartoes) {
+          const serieNum = parseInt(row['numero_serie']);
+          const numJogo  = parseInt(row['numero_jogo']);
+          const jogNum   = parseInt(row['jogador (nº camisa)']);
+          const tipo     = String(row['tipo'] || '').trim().toLowerCase();
+          const jogoId   = jogoKeyToId[`${serieNum}_${numJogo}`];
+          const jogId    = numToId[jogNum];
+          if (!jogoId || !jogId || !tipo) { cartoesErro++; continue; }
+          const { error } = await db.from('cartoes').insert({ jogo_id: jogoId, jogador_id: jogId, tipo });
+          if (error) { log(`  ✗ Erro cartão: ${error.message}`, 'erro'); cartoesErro++; }
+          else cartoesOk++;
+        }
+        log(`  → ${cartoesOk} inseridos, ${cartoesErro} com erro`, cartoesErro > 0 ? 'warn' : 'info');
+        logSep();
+      }
+
+      // ── 7. AVALIAÇÕES ─────────────────────────────
+      if (d.avaliacoes.length > 0) {
+        log('⭐ Importando avaliações...', 'info');
+        let avalOk = 0, avalErro = 0;
+        const upserts = [];
+        for (const row of d.avaliacoes) {
+          const serieNum = parseInt(row['numero_serie']);
+          const jogNum   = parseInt(row['jogador (nº camisa)']);
+          const nota     = parseFloat(row['nota_media']);
+          const isSel    = String(row['is_selecao (SIM/NAO)'] || 'NAO').trim().toUpperCase() === 'SIM';
+          const isMvp    = String(row['is_mvp (SIM/NAO)'] || 'NAO').trim().toUpperCase() === 'SIM';
+          const serieId  = serieNumToId[serieNum];
+          const jogId    = numToId[jogNum];
+          if (!serieId || !jogId) { avalErro++; continue; }
+          upserts.push({ serie_id: serieId, jogador_id: jogId, nota_media: isNaN(nota) ? null : nota, is_selecao: isSel, is_mvp: isMvp });
+        }
+        if (upserts.length > 0) {
+          const { error } = await db.from('avaliacoes_serie').upsert(upserts, { onConflict: 'serie_id,jogador_id' });
+          if (error) { log(`  ✗ Erro avaliações: ${error.message}`, 'erro'); avalErro += upserts.length; }
+          else { avalOk = upserts.length; log(`  ✓ ${avalOk} avaliações salvas`, 'ok'); }
+        }
+        log(`  → ${avalOk} inseridas, ${avalErro} com erro`, avalErro > 0 ? 'warn' : 'info');
+        logSep();
+      }
+
+      // ── RESULTADO FINAL ───────────────────────────
+      if (erros.length === 0) {
+        log('', 'info');
+        log('✅ IMPORTAÇÃO CONCLUÍDA COM SUCESSO!', 'ok');
+      } else {
+        log('', 'info');
+        log(`⚠ Importação finalizada com ${erros.length} erro(s). Verifique o log acima.`, 'warn');
+      }
+
+    } catch(err) {
+      log(`✗ Erro inesperado: ${err.message}`, 'erro');
+    } finally {
+      document.getElementById('btn-importar').disabled = false;
+    }
   }
 </script>
 </body>
